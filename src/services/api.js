@@ -1,5 +1,5 @@
 // api.js
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const registerUser = async (username, password, isManufacturer) => {
   const response = await fetch(`${API_URL}/register`, {
