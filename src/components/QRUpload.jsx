@@ -21,7 +21,7 @@ const QRUpload = ({ token, loading, error, onUpload }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:5000/upload_csv', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/upload_csv`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -30,13 +30,21 @@ const QRUpload = ({ token, loading, error, onUpload }) => {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Upload failed');
-      }
+  const errorText = await response.text();
+  throw new Error(errorText || 'Upload failed');
+}
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'qrcodes.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
 
-      const result = await response.json();
-      alert(result.message);
-      onUpload(file); // Notify parent
+      alert('QR Codes generated and download started.');
+      onUpload(file);
       setFile(null);
     } catch (err) {
       setUploadError(err.message);
@@ -48,7 +56,7 @@ const QRUpload = ({ token, loading, error, onUpload }) => {
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Upload Product CSV</h2>
-      <p style={styles.subtitle}>Upload a CSV file to generate QR codes for your products</p>
+      <p style={styles.subtitle}>Upload a CSV file to generate and download QR codes for your products</p>
 
       {error && <div style={styles.error}>{error}</div>}
       {uploadError && <div style={styles.error}>{uploadError}</div>}
@@ -75,12 +83,8 @@ const QRUpload = ({ token, loading, error, onUpload }) => {
 
         <p style={styles.note}>CSV must contain columns: unique_id, manufacturer</p>
 
-        <button
-          type="submit"
-          style={styles.submitButton}
-          disabled={isLoading || !file}
-        >
-          {isLoading ? 'Uploading...' : 'Generate QR Codes'}
+        <button type="submit" style={styles.submitButton} disabled={isLoading || !file}>
+          {isLoading ? 'Uploading...' : 'Generate & Download QR Codes'}
         </button>
       </form>
     </div>

@@ -88,6 +88,7 @@ function App() {
     }
   };
 
+  // ✅ Fix: move this ABOVE the return
   const handleFileUpload = async (file) => {
     setLoading(true);
     clearError();
@@ -252,10 +253,6 @@ const styles = {
     fontSize: '14px',
     transition: 'all 0.2s ease',
     letterSpacing: '0.5px',
-    ':hover': {
-      backgroundColor: '#3a5a80',
-      transform: 'translateY(-1px)',
-    },
   },
   content: {
     backgroundColor: 'white',
