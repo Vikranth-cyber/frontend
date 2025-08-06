@@ -90,33 +90,42 @@ function App() {
 
   // ✅ Fix: move this ABOVE the return
   const handleFileUpload = async (file) => {
-    setLoading(true);
-    clearError();
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+  setLoading(true);
+  clearError();
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/upload_csv`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/upload_csv`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Upload failed');
-      }
-
-      const result = await response.json();
-      alert(result.message);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Upload failed');
     }
-  };
+
+    // Handle ZIP file response
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'qrcodes.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleLogout = () => {
     setToken('');
