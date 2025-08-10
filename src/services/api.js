@@ -1,7 +1,7 @@
 // api.js
 const API_URL = import.meta.env.VITE_API_URL;
 
-export const registerUser = async (username, password, isManufacturer) => {
+export const registerUser = async (username, password, isManufacturer, manufacturerName) => {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: {
@@ -10,7 +10,8 @@ export const registerUser = async (username, password, isManufacturer) => {
     body: JSON.stringify({
       username,
       password,
-      is_manufacturer: isManufacturer
+      is_manufacturer: isManufacturer,
+      manufacturer_name: manufacturerName
     }),
   });
   
@@ -110,4 +111,41 @@ export const fetchNotifications = async (token) => {
   }
   
   return await response.json();
+};
+
+export const downloadSampleCSV = async (token) => {
+  const response = await fetch(`${API_URL}/sample_csv`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    credentials: 'include'
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error || 'Failed to download sample CSV');
+  }
+  
+  return await response.blob();
+};
+
+export const uploadCSV = async (token, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await fetch(`${API_URL}/upload_csv`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'CSV upload failed');
+  }
+  
+  return await response.blob();
 };

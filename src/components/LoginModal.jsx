@@ -5,11 +5,12 @@ const LoginModal = ({ onClose, onLogin, onRegister, loading, error }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isManufacturer, setIsManufacturer] = useState(false);
+  const [manufacturerName, setManufacturerName] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isRegister) {
-      onRegister(username, password, isManufacturer);
+      onRegister(username, password, isManufacturer, manufacturerName);
     } else {
       onLogin(username, password);
     }
@@ -49,16 +50,32 @@ const LoginModal = ({ onClose, onLogin, onRegister, loading, error }) => {
           </div>
 
           {isRegister && (
-            <div style={styles.formGroup}>
-              <label style={styles.label}>
-                <input
-                  type="checkbox"
-                  checked={isManufacturer}
-                  onChange={(e) => setIsManufacturer(e.target.checked)}
-                />
-                &nbsp; Register as Manufacturer
-              </label>
-            </div>
+            <>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>
+                  <input
+                    type="checkbox"
+                    checked={isManufacturer}
+                    onChange={(e) => setIsManufacturer(e.target.checked)}
+                  />
+                  &nbsp; Register as Manufacturer
+                </label>
+              </div>
+              
+              {isManufacturer && (
+                <div style={styles.formGroup}>
+                  <label htmlFor="manufacturerName" style={styles.label}>Manufacturer Name</label>
+                  <input
+                    type="text"
+                    id="manufacturerName"
+                    value={manufacturerName}
+                    onChange={(e) => setManufacturerName(e.target.value)}
+                    style={styles.input}
+                    required={isManufacturer}
+                  />
+                </div>
+              )}
+            </>
           )}
           
           <button type="submit" style={styles.submitButton} disabled={loading}>

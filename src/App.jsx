@@ -5,7 +5,8 @@ import {
   scanProduct,
   fetchScans,
   fetchNotifications,
-  fetchProducts
+  fetchProducts,
+  uploadCSV
 } from './services/api';
 
 import LandingPage from './components/LandingPage';
@@ -17,11 +18,14 @@ import HistoryTable from './components/HistoryTable';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isManufacturer, setIsManufacturer] = useState(false);
+  const [manufacturerName, setManufacturerName] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [token, setToken] = useState('');
   const [scanResult, setScanResult] = useState(null);
   const [scanHistory, setScanHistory] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,14 +35,18 @@ function App() {
     setLoading(true);
     clearError();
     try {
-      const { token, is_manufacturer } = await loginUser(username, password);
+      const { token, is_manufacturer, manufacturer_name } = await loginUser(username, password);
       setToken(token);
       setIsLoggedIn(true);
       setIsManufacturer(is_manufacturer);
+      setManufacturerName(manufacturer_name || '');
       setShowLoginModal(false);
 
       if (is_manufacturer) {
-        await fetchProducts(token);
+        const { products } = await fetchProducts(token);
+        setProducts(products);
+        const { notifications } = await fetchNotifications(token);
+        setNotifications(notifications);
       } else {
         await loadScanHistory(token);
       }
@@ -49,11 +57,11 @@ function App() {
     }
   };
 
-  const handleRegister = async (username, password, isManufacturer) => {
+  const handleRegister = async (username, password, isManufacturer, manufacturerName) => {
     setLoading(true);
     clearError();
     try {
-      await registerUser(username, password, isManufacturer);
+      await registerUser(username, password, isManufacturer, manufacturerName);
       await handleLogin(username, password);
     } catch (err) {
       setError(err.message);
@@ -88,50 +96,38 @@ function App() {
     }
   };
 
-  // ✅ Fix: move this ABOVE the return
   const handleFileUpload = async (file) => {
-  setLoading(true);
-  clearError();
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/upload_csv`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || 'Upload failed');
+    setLoading(true);
+    clearError();
+    try {
+      const blob = await uploadCSV(token, file);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'qrcodes.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      
+      // Refresh products after upload
+      const { products } = await fetchProducts(token);
+      setProducts(products);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-
-    // Handle ZIP file response
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'qrcodes.zip';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleLogout = () => {
     setToken('');
     setIsLoggedIn(false);
     setIsManufacturer(false);
+    setManufacturerName('');
     setShowScanner(false);
+    setProducts([]);
+    setNotifications([]);
     clearError();
   };
 
@@ -188,6 +184,9 @@ function App() {
             loading={loading}
             error={error}
             onLogout={handleLogout}
+            products={products}
+            notifications={notifications}
+            manufacturerName={manufacturerName}
           />
         </div>
       )}
@@ -225,7 +224,6 @@ function App() {
     </div>
   );
 }
-
 const styles = {
   app: {
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
